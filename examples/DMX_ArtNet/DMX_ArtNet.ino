@@ -33,7 +33,7 @@ void setup()
   Serial.println(WiFi.localIP());
 
   artnet.begin(mac, ip);
-  artnet.setArtDmxCallback(onDmxFrame1);
+  artnet.setArtDmxCallback(onDmxFrame);
   dmx.init();
 }
 
@@ -42,7 +42,7 @@ void loop()
   artnet.read();
 }
 
-void onDmxFrame1(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data)
+void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data)
 {
   if (universe == 0)  {
       for (int i = 0; i < 512; i++){
