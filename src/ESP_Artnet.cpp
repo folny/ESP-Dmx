@@ -22,76 +22,49 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef ARTNET_H
-#define ARTNET_H
-
-#include <Arduino.h>
-#include <ESP8266WiFi.h>
-#include "WiFiUdp.h"
-
-// UDP specific
-#define ART_NET_PORT 6454
-// Opcodes
-#define ART_POLL 0x2000
-#define ART_DMX 0x5000
-// Buffers
-#define MAX_BUFFER_ARTNET 530
-// Packet
-#define ART_NET_ID "Art-Net\0"
-#define ART_DMX_START 18
+#include <Artnet_ESP.h>
 
 
-class Artnet
+Artnet::Artnet() {}
+
+void Artnet::begin(byte mac[],byte ip[])
 {
-public:
-  Artnet();
+  Udp.begin(ART_NET_PORT);
+}
 
-  void begin(byte mac[],byte ip[]);
-  uint16_t read();
-  void printPacketHeader();
-  void printPacketContent();
-
-  // Return a pointer to the start of the DMX data
-  inline uint8_t* getDmxFrame(void)
-  {
-    return artnetPacket + ART_DMX_START;
-  }
-
-  inline uint16_t getOpcode(void)
-  {
-    return opcode;
-  }
-
-  inline uint8_t getSequence(void)
-  {
-    return sequence;
-  }
-
-  inline uint16_t getUniverse(void)
-  {
-    return incomingUniverse;
-  }
-
-  inline uint16_t getLength(void)
-  {
-    return dmxDataLength;
-  } 
-
-  inline void setArtDmxCallback(void (*fptr)(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data)) 
-  {
-    artDmxCallback = fptr;
-  }
-
-private:
-  WiFiUDP Udp;
+uint16_t Artnet::read()
+{
+  packetSize = Udp.parsePacket();
   
-  uint8_t artnetPacket[MAX_BUFFER_ARTNET];
-  uint16_t packetSize;
-  uint16_t opcode;
-  uint8_t sequence;
-  uint16_t incomingUniverse;
-  uint16_t dmxDataLength;
-  void (*artDmxCallback)(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data);
-};
+  if (packetSize <= MAX_BUFFER_ARTNET && packetSize > 0)
+  { 
+      Udp.read(artnetPacket, MAX_BUFFER_ARTNET);
 
-#endif
+      // Check that packetID is "Art-Net" else ignore
+      for (byte i = 0 ; i < 9 ; i++)
+      {
+        if (artnetPacket[i] != ART_NET_ID[i])
+          return 0;
+      }
+        
+      opcode = artnetPacket[8] | artnetPacket[9] << 8; 
+
+      if (opcode == ART_DMX)
+      {
+        sequence = artnetPacket[12];
+        incomingUniverse = artnetPacket[14] | artnetPacket[15] << 8;  
+        dmxDataLength = artnetPacket[17] | artnetPacket[16] << 8;
+
+        if (artDmxCallback) (*artDmxCallback)(incomingUniverse, dmxDataLength, sequence, artnetPacket + ART_DMX_START);
+        return ART_DMX;
+      }
+      if (opcode == ART_POLL)
+      {
+        return ART_POLL; 
+      }
+  }
+  else
+  {
+    return 0;
+  }
+}
