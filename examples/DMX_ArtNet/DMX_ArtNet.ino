@@ -33,8 +33,8 @@ void setup()
   Serial.println(WiFi.localIP());
 
   artnet.begin(mac, ip);
-  dmx.init();
   artnet.setArtDmxCallback(onDmxFrame1);
+  dmx.init();
 }
 
 void loop()
