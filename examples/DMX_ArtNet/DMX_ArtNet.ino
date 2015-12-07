@@ -11,9 +11,9 @@ uint8_t mask[] = {255, 255, 255, 0};
 uint8_t mac[] = {0x04, 0xE9, 0xE5, 0x00, 0x69, 0xEC};
 
 char ssid[] = "SSID"; //  your network SSID (name)
-char pass[] = "PASSWORD";    // your network password (use for WPA, or use as key for WEP)
+char pass[] = "PASSWORD"; // your network password (use for WPA, or use as key for WEP)
 
-DMXESPSerial dmx;         /*serial object */
+DMXESPSerial dmx;        
 Artnet artnet;
 
 void setup()
@@ -40,6 +40,7 @@ void setup()
 void loop()
 {
   artnet.read();
+  dmx.update();
 }
 
 void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* data)
@@ -48,7 +49,5 @@ void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t* d
       for (int i = 0; i < 512; i++){
       dmx.write(i, data[i - 1]);
    }
-  dmx.update();
   }
-  
 }
